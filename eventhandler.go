@@ -9,21 +9,17 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var queue Topic
+
+// Queues holds all the queues for a given instance
+var Queues = make(map[string]Topic)
+
 // Message :Struct for storing JSON message payloads
 type Message struct {
 	Msg   string `json:"msg"`
 	ID    int    `json:"id"`
 	Topic string `json:"topic"`
 }
-
-// Topic : Struct for storing message queue topics
-type Topic struct {
-	TopicName string      `json:"topic_name"`
-	Queue     chan string `json:"queue"`
-}
-
-// TopicQueues : Holds all the queues for a given instance for the message queue
-var TopicQueues = make(map[string]Topic)
 
 func check(e error) {
 	if e != nil {
@@ -47,29 +43,21 @@ func SendMessage(res http.ResponseWriter, req *http.Request) {
 	err := messagePayload.Decode(&message)
 	check(err)
 
-	if topic, exists := TopicQueues[message.Topic]; exists {
-		topic.Queue <- message.Msg
-	} else {
-		responsePayload.Status = "Fail"
-		responsePayload.Err = "Topic doesnt exist"
+	if topic, exists := Queues[message.Topic]; exists {
+		queue.Insert(topic, message.Msg)
+		responsePayload.Status = "Success"
+		responsePayload.Msg = fmt.Sprintf("Recieved Msg %s // ID: %d // Topic: %s", message.Msg, message.ID, message.Topic)
 
 		fmt.Println(responsePayload)
 		json.NewEncoder(res).Encode(responsePayload)
 		return
 	}
 
-	responsePayload.Status = "Success"
-	responsePayload.Msg = fmt.Sprintf("Recieved Msg %s.\nID: %d\nTopic: %s\n", message.Msg, message.ID, message.Topic)
+	responsePayload.Status = "Fail"
+	responsePayload.Err = "Topic doesnt exist"
 
 	fmt.Println(responsePayload)
 	json.NewEncoder(res).Encode(responsePayload)
-}
-
-// PrintMessage : prints incoming message in the specified channel. >> FOR TESTING <<
-func PrintMessage() string {
-	msg := <-TopicQueues["Sulav"].Queue
-	fmt.Println(msg)
-	return msg
 }
 
 // CreateTopic : Adds a new channel to the message queue
@@ -90,7 +78,7 @@ func CreateTopic(res http.ResponseWriter, req *http.Request) {
 	err := topicPayload.Decode(&topic)
 	check(err)
 
-	if len(TopicQueues) >= 25 {
+	if len(Queues) >= 25 {
 		responsePayload.Status = "Fail"
 		responsePayload.Err = "Max amount of topics reached."
 
@@ -99,7 +87,7 @@ func CreateTopic(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if _, exists := TopicQueues[topic.TopicName]; exists {
+	if _, exists := Queues[topic.TopicName]; exists {
 		responsePayload.Status = "Fail"
 		responsePayload.Err = "Topic already exists."
 
@@ -108,8 +96,8 @@ func CreateTopic(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	newTopicQueue := make(chan string)
-	TopicQueues[topic.TopicName] = Topic{topic.TopicName, newTopicQueue}
+	newTopicQueue := queue.New(topic.TopicName)
+	Queues[topic.TopicName] = Topic{topic.TopicName, newTopicQueue}
 
 	responsePayload.Status = "Success"
 	responsePayload.Msg = fmt.Sprintf("Topic %s Added.", topic.TopicName)
