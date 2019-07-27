@@ -33,16 +33,36 @@ func check(e error) {
 }
 
 // SendMessage : parses and drops message to the appropiate channel as defined in the incoming payload
-func SendMessage(msg Message) string {
+func SendMessage(res http.ResponseWriter, req *http.Request) {
+	res.Header().Set("Content-Type", "application/json")
 
-	// msgStruct := Message{}
-	// err := json.Unmarshal([]byte(msg), &msgStruct)
-	// check(err)
+	responsePayload := struct {
+		Status string `json:"status"`
+		Msg    string `json:"msg"`
+		Err    string `json:"err"`
+	}{}
 
-	if topic, exists := TopicQueues[msg.Topic]; exists {
-		topic.Queue <- msg.Msg
+	message := Message{}
+	messagePayload := json.NewDecoder(req.Body)
+	err := messagePayload.Decode(&message)
+	check(err)
+
+	if topic, exists := TopicQueues[message.Topic]; exists {
+		topic.Queue <- message.Msg
+	} else {
+		responsePayload.Status = "Fail"
+		responsePayload.Err = "Topic doesnt exist"
+
+		fmt.Println(responsePayload)
+		json.NewEncoder(res).Encode(responsePayload)
+		return
 	}
-	return fmt.Sprintf("Recieved Msg %s.\nID: %d\nTopic: %s\n", msg.Msg, msg.ID, msg.Topic)
+
+	responsePayload.Status = "Success"
+	responsePayload.Msg = fmt.Sprintf("Recieved Msg %s.\nID: %d\nTopic: %s\n", message.Msg, message.ID, message.Topic)
+
+	fmt.Println(responsePayload)
+	json.NewEncoder(res).Encode(responsePayload)
 }
 
 // PrintMessage : prints incoming message in the specified channel. >> FOR TESTING <<
@@ -55,11 +75,13 @@ func PrintMessage() string {
 // CreateTopic : Adds a new channel to the message queue
 func CreateTopic(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "application/json")
+
 	requestPayload := struct {
 		TopicName string `json:"topic_name"`
 	}{}
 	responsePayload := struct {
 		Status string `json:"status"`
+		Msg    string `json:"msg"`
 		Err    string `json:"err"`
 	}{}
 
@@ -69,7 +91,7 @@ func CreateTopic(res http.ResponseWriter, req *http.Request) {
 	check(err)
 
 	if len(TopicQueues) >= 25 {
-		responsePayload.Status = "Failed"
+		responsePayload.Status = "Fail"
 		responsePayload.Err = "Max amount of topics reached."
 
 		fmt.Println(responsePayload)
@@ -78,7 +100,7 @@ func CreateTopic(res http.ResponseWriter, req *http.Request) {
 	}
 
 	if _, exists := TopicQueues[topic.TopicName]; exists {
-		responsePayload.Status = "Failed"
+		responsePayload.Status = "Fail"
 		responsePayload.Err = "Topic already exists."
 
 		fmt.Println(responsePayload)
@@ -90,7 +112,7 @@ func CreateTopic(res http.ResponseWriter, req *http.Request) {
 	TopicQueues[topic.TopicName] = Topic{topic.TopicName, newTopicQueue}
 
 	responsePayload.Status = "Success"
-	responsePayload.Err = fmt.Sprintf("Topic %s Added.", topic.TopicName)
+	responsePayload.Msg = fmt.Sprintf("Topic %s Added.", topic.TopicName)
 
 	fmt.Println(responsePayload)
 	json.NewEncoder(res).Encode(&responsePayload)
@@ -100,7 +122,7 @@ func main() {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/newTopic", CreateTopic).Methods("POST")
-	//router.HandleFunc("/sendMessage", SendMessage).Methods("POST")
+	router.HandleFunc("/sendMessage", SendMessage).Methods("POST")
 	//router.HandleFunc("/jobs", PrintMessage).Methods("GET")
 	log.Fatal(http.ListenAndServe(":8000", router))
 }
