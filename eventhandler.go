@@ -177,7 +177,7 @@ func main() {
 	router.HandleFunc("/newTopic", CreateTopic).Methods("POST")
 	router.HandleFunc("/message", SendMessage).Methods("POST")
 	router.HandleFunc("/message", GetMessage).Methods("GET")
-	router.HandleFunc("/length")
+	router.HandleFunc("/length", Length).Methods("GET")
 	router.HandleFunc("/loaderio-3000acba7e633b71b1d2d9439c376dd8/", loaderIoToken)
 	//router.HandleFunc("/jobs", PrintMessage).Methods("GET")
 	log.Fatal(http.ListenAndServe(":8000", router))
