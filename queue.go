@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -19,25 +20,39 @@ type Item struct {
 }
 
 //New creates and returns a new queue
-func (q *Topic) New(topicName string) []Item {
-	var queue []Item
-	return queue
+func (q *Topic) New(topicName string) Topic {
+	queue := make([]Item, 0, 10)
+	newTopic := Topic{topicName, queue}
+	return newTopic
 }
 
 //Insert adds an item to the bottom of the queue
-func (q *Topic) Insert(targetQueue Topic, message string) {
+func (q *Topic) Insert(message string) {
 
 	item := Item{}
-	item.ID = len(targetQueue.Queue) + 1
+	item.ID = len(q.Queue) + 1
 	item.TimeStamp = time.Now().Format(time.RFC3339)
 	item.Message = message
-	item.Topic = targetQueue.TopicName
+	item.Topic = q.TopicName
 
-	targetQueue.Queue = append(targetQueue.Queue, item)
+	q.Queue = append(q.Queue, item)
+	fmt.Println(len(q.Queue))
+}
+
+// Get retrieves the first item in the queue
+func (q *Topic) Get() Item {
+
+	if len(q.Queue) > 0 {
+		item := q.Queue[0]
+		q.Delete()
+		return item
+	}
+
+	return Item{}
 }
 
 //Delete removes the top item from the queue
-func (q *Topic) Delete(targetQueue Topic) {
-
-	targetQueue.Queue = targetQueue.Queue[1:len(targetQueue.Queue)]
+func (q *Topic) Delete() {
+	fmt.Println(len(q.Queue))
+	q.Queue = q.Queue[1:len(q.Queue)]
 }
