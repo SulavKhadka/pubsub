@@ -174,9 +174,9 @@ func loaderIoToken(res http.ResponseWriter, req *http.Request) {
 func main() {
 
 	router := mux.NewRouter()
-	router.HandleFunc("/newTopic", CreateTopic).Methods("POST")
-	router.HandleFunc("/message", SendMessage).Methods("POST")
-	router.HandleFunc("/message", GetMessage).Methods("GET")
+	router.HandleFunc("/topic", CreateTopic).Methods("PUT")
+	router.HandleFunc("/topic", SendMessage).Methods("POST")
+	router.HandleFunc("/topic", GetMessage).Methods("GET")
 	router.HandleFunc("/length", Length).Methods("GET")
 	router.HandleFunc("/loaderio-3000acba7e633b71b1d2d9439c376dd8/", loaderIoToken)
 	//router.HandleFunc("/jobs", PrintMessage).Methods("GET")

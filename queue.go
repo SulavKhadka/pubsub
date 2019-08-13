@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -21,7 +20,7 @@ type Item struct {
 
 //New creates and returns a new queue
 func (q *Topic) New(topicName string) Topic {
-	queue := make([]Item, 0, 10)
+	queue := make([]Item, 0, 10000)
 	newTopic := Topic{topicName, queue}
 	return newTopic
 }
@@ -36,7 +35,6 @@ func (q *Topic) Insert(message string) {
 	item.Topic = q.TopicName
 
 	q.Queue = append(q.Queue, item)
-	fmt.Println(len(q.Queue))
 }
 
 // Get retrieves the first item in the queue
@@ -58,6 +56,5 @@ func (q *Topic) Length() int {
 
 //Delete removes the top item from the queue
 func (q *Topic) Delete() {
-	fmt.Println(len(q.Queue))
 	q.Queue = q.Queue[1:len(q.Queue)]
 }

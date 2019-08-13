@@ -14,7 +14,7 @@ func TestCreateTopic(t *testing.T) {
 	samplePayload := []byte(`{"topic_name": "Test","queue": ""}`)
 
 	//API endpoint setup
-	req, err := http.NewRequest("POST", "/newTopic", bytes.NewBuffer(samplePayload))
+	req, err := http.NewRequest("PUT", "/topic", bytes.NewBuffer(samplePayload))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -26,8 +26,8 @@ func TestCreateTopic(t *testing.T) {
 	//Making the API call
 	handler.ServeHTTP(rr, req)
 
-	if req.Method != "POST" {
-		t.Errorf("Expected 'POST' request, got '%s'", req.Method)
+	if req.Method != "PUT" {
+		t.Errorf("Expected 'PUT' request, got '%s'", req.Method)
 	}
 	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v",
@@ -58,11 +58,11 @@ func TestCreateTopic(t *testing.T) {
 
 func TestSendMessage(t *testing.T) {
 
-	// TODO: Rethink the way to make the create topic call.
+	// FIXME: Rethink the way to make the create topic call.
 	newTopic := []byte(`{"topic_name": "TestTopic","queue": ""}`)
 
 	//API endpoint setup
-	req, err := http.NewRequest("POST", "/newTopic", bytes.NewBuffer(newTopic))
+	req, err := http.NewRequest("PUT", "/topic", bytes.NewBuffer(newTopic))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -81,7 +81,7 @@ func TestSendMessage(t *testing.T) {
 	check(err)
 
 	//API endpoint setup
-	req, err = http.NewRequest("POST", "/message", bytes.NewBuffer(samplePayload))
+	req, err = http.NewRequest("POST", "/topic", bytes.NewBuffer(samplePayload))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,7 +128,7 @@ func TestGetMessage(t *testing.T) {
 	newTopic := []byte(`{"topic_name": "TestTopic","queue": ""}`)
 
 	//API endpoint setup
-	req, err := http.NewRequest("POST", "/newTopic", bytes.NewBuffer(newTopic))
+	req, err := http.NewRequest("PUT", "/topic", bytes.NewBuffer(newTopic))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,7 +147,7 @@ func TestGetMessage(t *testing.T) {
 	check(err)
 
 	//API endpoint setup
-	req, err = http.NewRequest("POST", "/message", bytes.NewBuffer(sampleMessage))
+	req, err = http.NewRequest("POST", "/topic", bytes.NewBuffer(sampleMessage))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,7 +168,7 @@ func TestGetMessage(t *testing.T) {
 	check(err)
 
 	//API endpoint setup
-	req, err = http.NewRequest("GET", "/message", bytes.NewBuffer(samplePayload))
+	req, err = http.NewRequest("GET", "/topic", bytes.NewBuffer(samplePayload))
 	if err != nil {
 		t.Fatal(err)
 	}
