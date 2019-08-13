@@ -20,10 +20,31 @@ func TestNew(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
+	var newTopic Topic
+	actualTopic := newTopic.New("TestTopic")
+	actualTopic.Insert("This is a test message")
+	actualItem := actualTopic.Get()
 
+	expectedTopic := Topic{"TestTopic", []Item{}}
+	expectedTopic.Queue = append(expectedTopic.Queue, Item{1, "This is a test message", "", "TestTopic"})
+	expectedItem := expectedTopic.Queue[0]
+
+	if (actualItem.ID != expectedItem.ID) || (actualItem.Message != expectedItem.Message) || (actualItem.Topic != expectedItem.Topic) {
+		t.Errorf("Item struct payload is invalid.")
+	}
 }
 
 func TestDelete(t *testing.T) {
+	var newTopic Topic
+	actualTopic := newTopic.New("TestTopic")
+	actualTopic.Insert("This is a test message for deletion")
+	actualTopic.Delete()
+
+	expectedTopic := Topic{"TestTopic", []Item{}}
+
+	if len(actualTopic.Queue) != len(expectedTopic.Queue) {
+		t.Errorf("Expected queue length: %d got %d", len(actualTopic.Queue), len(expectedTopic.Queue))
+	}
 
 }
 
