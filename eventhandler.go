@@ -12,7 +12,7 @@ import (
 var queue Topic
 
 // Queues holds all the queues for a given instance
-var Queues = make(map[string]Topic)
+var Queues = make(map[string]*Topic)
 
 // Message :Struct for storing JSON message payloads
 type Message struct {
@@ -127,7 +127,7 @@ func CreateTopic(res http.ResponseWriter, req *http.Request) {
 	}
 
 	newTopicQueue := queue.New(topic.TopicName)
-	Queues[topic.TopicName] = newTopicQueue
+	Queues[topic.TopicName] = &newTopicQueue
 
 	responsePayload.Status = "Success"
 	responsePayload.Msg = fmt.Sprintf("Topic %s Added.", topic.TopicName)
