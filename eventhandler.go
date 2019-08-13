@@ -135,6 +135,38 @@ func CreateTopic(res http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(res).Encode(&responsePayload)
 }
 
+// Length : returns the length of a queue
+func Length(res http.ResponseWriter, req *http.Request) {
+	res.Header().Set("Content-Type", "application/json")
+
+	requestPayload := struct {
+		TopicName string `json:"topic_name"`
+	}{}
+	responsePayload := struct {
+		Status string `json:"status"`
+		Length int    `json:"length"`
+		Err    string `json:"err"`
+	}{}
+
+	topic := requestPayload
+	topicPayload := json.NewDecoder(req.Body)
+	err := topicPayload.Decode(&topic)
+	check(err)
+
+	if userTopic, exists := Queues[topic.TopicName]; exists {
+		responsePayload.Status = "Success"
+		responsePayload.Length = len(userTopic.Queue)
+
+		json.NewEncoder(res).Encode(responsePayload)
+		return
+	}
+
+	responsePayload.Status = "Fail"
+	responsePayload.Err = "Topic doesnt exists."
+
+	json.NewEncoder(res).Encode(responsePayload)
+}
+
 func loaderIoToken(res http.ResponseWriter, req *http.Request) {
 	res.Write([]byte("loaderio-3000acba7e633b71b1d2d9439c376dd8"))
 }
@@ -145,6 +177,7 @@ func main() {
 	router.HandleFunc("/newTopic", CreateTopic).Methods("POST")
 	router.HandleFunc("/message", SendMessage).Methods("POST")
 	router.HandleFunc("/message", GetMessage).Methods("GET")
+	router.HandleFunc("/length")
 	router.HandleFunc("/loaderio-3000acba7e633b71b1d2d9439c376dd8/", loaderIoToken)
 	//router.HandleFunc("/jobs", PrintMessage).Methods("GET")
 	log.Fatal(http.ListenAndServe(":8000", router))

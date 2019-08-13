@@ -51,6 +51,11 @@ func (q *Topic) Get() Item {
 	return Item{}
 }
 
+//Length gives back the length of the queue
+func (q *Topic) Length() int {
+	return len(q.Queue)
+}
+
 //Delete removes the top item from the queue
 func (q *Topic) Delete() {
 	fmt.Println(len(q.Queue))

@@ -11,7 +11,7 @@ import (
 
 func TestCreateTopic(t *testing.T) {
 
-	samplePayload := []byte(`{"topic_name": "Sulav","queue": ""}`)
+	samplePayload := []byte(`{"topic_name": "Test","queue": ""}`)
 
 	//API endpoint setup
 	req, err := http.NewRequest("POST", "/newTopic", bytes.NewBuffer(samplePayload))
@@ -38,7 +38,7 @@ func TestCreateTopic(t *testing.T) {
 		Status string `json:"status"`
 		Msg    string `json:"msg"`
 		Err    string `json:"err"`
-	}{"Success", "Topic Sulav Added.", ""}
+	}{"Success", "Topic Test Added.", ""}
 
 	actualResponse := struct {
 		Status string `json:"status"`

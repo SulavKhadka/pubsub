@@ -67,3 +67,15 @@ func TestInsert(t *testing.T) {
 	}
 
 }
+
+func TestLength(t *testing.T) {
+	var newTopic Topic
+	actualTopic := newTopic.New("TestTopic")
+	actualTopic.Insert("This is a test message")
+	actualQueueLength := len(actualTopic.Queue)
+
+	if actualQueueLength != 1 {
+		t.Errorf("Expected queue length: %d got %d", len(actualTopic.Queue), 1)
+	}
+
+}
