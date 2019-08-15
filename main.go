@@ -10,9 +10,9 @@ import (
 	"github.com/sulavkhadka/msgqueue/queue"
 )
 
-var server struct {
-	topic  queue.Topic
-	item   queue.Item
+type server struct {
+	topic  *queue.Topic
+	item   *queue.Item
 	queues map[string]*queue.Topic // Queues holds all the queues for a given instance
 }
 
@@ -31,7 +31,7 @@ func check(e error) {
 }
 
 // SendMessage : parses and drops message to the appropiate channel as defined in the incoming payload
-func SendMessage(res http.ResponseWriter, req *http.Request) {
+func (s *server) SendMessage(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "application/json")
 
 	responsePayload := struct {
@@ -45,7 +45,7 @@ func SendMessage(res http.ResponseWriter, req *http.Request) {
 	err := messagePayload.Decode(&message)
 	check(err)
 
-	if topic, exists := server.queues[message.Topic]; exists {
+	if topic, exists := s.queues[message.Topic]; exists {
 		topic.Insert(message.Msg)
 		responsePayload.Status = "Success"
 		responsePayload.Msg = fmt.Sprintf("Recieved Msg %s // ID: %d // Topic: %s", message.Msg, message.ID, message.Topic)
@@ -61,7 +61,7 @@ func SendMessage(res http.ResponseWriter, req *http.Request) {
 }
 
 //GetMessage : retrieves the top message from the appropriate queue
-func GetMessage(res http.ResponseWriter, req *http.Request) {
+func (s *server) GetMessage(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "application/json")
 
 	requestPayload := struct {
@@ -69,9 +69,9 @@ func GetMessage(res http.ResponseWriter, req *http.Request) {
 	}{}
 
 	responsePayload := struct {
-		Topic string      `json:"topic"`
-		Msg   server.item `json:"msg"`
-		Err   string      `json:"err"`
+		Topic string     `json:"topic"`
+		Msg   queue.Item `json:"msg"`
+		Err   string     `json:"err"`
 	}{}
 
 	topic := requestPayload
@@ -79,7 +79,7 @@ func GetMessage(res http.ResponseWriter, req *http.Request) {
 	err := topicPayload.Decode(&topic)
 	check(err)
 
-	if topicName, exists := server.queues[topic.TopicName]; exists {
+	if topicName, exists := s.queues[topic.TopicName]; exists {
 		item := topicName.Get()
 		responsePayload.Topic = topicName.TopicName
 		responsePayload.Msg = item
@@ -95,7 +95,7 @@ func GetMessage(res http.ResponseWriter, req *http.Request) {
 }
 
 // CreateTopic : Adds a new channel to the message queue
-func CreateTopic(res http.ResponseWriter, req *http.Request) {
+func (s *server) CreateTopic(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "application/json")
 
 	requestPayload := struct {
@@ -112,7 +112,7 @@ func CreateTopic(res http.ResponseWriter, req *http.Request) {
 	err := topicPayload.Decode(&topic)
 	check(err)
 
-	if len(server.queues) >= 25 {
+	if len(s.queues) >= 25 {
 		responsePayload.Status = "Fail"
 		responsePayload.Err = "Max amount of topics reached."
 
@@ -120,7 +120,7 @@ func CreateTopic(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if _, exists := server.queues[topic.TopicName]; exists {
+	if _, exists := s.queues[topic.TopicName]; exists {
 		responsePayload.Status = "Fail"
 		responsePayload.Err = "Topic already exists."
 
@@ -128,8 +128,8 @@ func CreateTopic(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	newTopicQueue := server.topic.New(topic.TopicName)
-	server.queues[topic.TopicName] = &newTopicQueue
+	newTopicQueue := s.topic.New(topic.TopicName)
+	s.queues[topic.TopicName] = &newTopicQueue
 
 	responsePayload.Status = "Success"
 	responsePayload.Msg = fmt.Sprintf("Topic %s Added.", topic.TopicName)
@@ -138,7 +138,7 @@ func CreateTopic(res http.ResponseWriter, req *http.Request) {
 }
 
 // Length : returns the length of a queue
-func Length(res http.ResponseWriter, req *http.Request) {
+func (s *server) Length(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "application/json")
 
 	requestPayload := struct {
@@ -155,7 +155,7 @@ func Length(res http.ResponseWriter, req *http.Request) {
 	err := topicPayload.Decode(&topic)
 	check(err)
 
-	if userTopic, exists := server.queues[topic.TopicName]; exists {
+	if userTopic, exists := s.queues[topic.TopicName]; exists {
 		responsePayload.Status = "Success"
 		responsePayload.Length = len(userTopic.Queue)
 
@@ -173,16 +173,16 @@ func loaderIoToken(res http.ResponseWriter, req *http.Request) {
 	res.Write([]byte("loaderio-3000acba7e633b71b1d2d9439c376dd8"))
 }
 
-func main() {
+func (s *server) main() {
 
-	server.queues = make(map[string]*queue.Topic)
-	server.item = queue.Item{}
+	s.queues = make(map[string]*queue.Topic)
+	s.item = &queue.Item{}
 
 	router := mux.NewRouter()
-	router.HandleFunc("/topic", CreateTopic).Methods("PUT")
-	router.HandleFunc("/topic", SendMessage).Methods("POST")
-	router.HandleFunc("/topic", GetMessage).Methods("GET")
-	router.HandleFunc("/length", Length).Methods("GET")
+	router.HandleFunc("/topic", s.CreateTopic).Methods("PUT")
+	router.HandleFunc("/topic", s.SendMessage).Methods("POST")
+	router.HandleFunc("/topic", s.GetMessage).Methods("GET")
+	router.HandleFunc("/length", s.Length).Methods("GET")
 	router.HandleFunc("/loaderio-3000acba7e633b71b1d2d9439c376dd8/", loaderIoToken)
 	//router.HandleFunc("/jobs", PrintMessage).Methods("GET")
 	log.Fatal(http.ListenAndServe(":8000", router))
