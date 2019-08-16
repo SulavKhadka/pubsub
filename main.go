@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/sulavkhadka/simplemsgqueue/queue"
+	"github.com/sulavkhadka/queue"
 
 	"github.com/gorilla/mux"
 )
