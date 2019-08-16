@@ -6,8 +6,9 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/sulavkhadka/simplemsgqueue/queue"
+
 	"github.com/gorilla/mux"
-	"github.com/sulavkhadka/msgqueue/queue"
 )
 
 type server struct {

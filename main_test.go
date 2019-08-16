@@ -8,7 +8,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/sulavkhadka/msgqueue/queue"
+	"github.com/sulavkhadka/simplemsgqueue/queue"
 )
 
 func TestCreateTopic(t *testing.T) {
