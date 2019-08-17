@@ -23,6 +23,7 @@ type server struct {
 	queues map[string]*queue.Topic // queues holds all the queues for a given instance.
 }
 
+// newServer initializes the server struct and returns a *server
 func newServer() *server {
 	return &server{
 		queues: make(map[string]*queue.Topic),
@@ -56,14 +57,16 @@ func (s *server) SendMessage(res http.ResponseWriter, req *http.Request) {
 		responsePayload.Status = "Success"
 		responsePayload.Msg = fmt.Sprintf("Recieved Msg %s // ID: %d // Topic: %s", message.Msg, message.ID, message.Topic)
 
-		json.NewEncoder(res).Encode(responsePayload)
+		err := json.NewEncoder(res).Encode(responsePayload)
+		check(err)
 		return
 	}
 
 	responsePayload.Status = "Fail"
 	responsePayload.Err = "Topic doesnt exist"
 
-	json.NewEncoder(res).Encode(responsePayload)
+	err = json.NewEncoder(res).Encode(responsePayload)
+	check(err)
 }
 
 //GetMessage : retrieves the top message from the appropriate queue
@@ -90,13 +93,15 @@ func (s *server) GetMessage(res http.ResponseWriter, req *http.Request) {
 		responsePayload.Topic = topicName.TopicName
 		responsePayload.Msg = item
 
-		json.NewEncoder(res).Encode(responsePayload)
+		err := json.NewEncoder(res).Encode(responsePayload)
+		check(err)
 		return
 	}
 
 	responsePayload.Err = "Topic doesnt exist"
 
-	json.NewEncoder(res).Encode(responsePayload)
+	err = json.NewEncoder(res).Encode(responsePayload)
+	check(err)
 
 }
 
@@ -122,7 +127,8 @@ func (s *server) CreateTopic(res http.ResponseWriter, req *http.Request) {
 		responsePayload.Status = "Fail"
 		responsePayload.Err = "Max amount of topics reached."
 
-		json.NewEncoder(res).Encode(responsePayload)
+		err := json.NewEncoder(res).Encode(responsePayload)
+		check(err)
 		return
 	}
 
@@ -130,7 +136,8 @@ func (s *server) CreateTopic(res http.ResponseWriter, req *http.Request) {
 		responsePayload.Status = "Fail"
 		responsePayload.Err = "Topic already exists."
 
-		json.NewEncoder(res).Encode(responsePayload)
+		err := json.NewEncoder(res).Encode(responsePayload)
+		check(err)
 		return
 	}
 
@@ -140,7 +147,8 @@ func (s *server) CreateTopic(res http.ResponseWriter, req *http.Request) {
 	responsePayload.Status = "Success"
 	responsePayload.Msg = fmt.Sprintf("Topic %s Added.", topic.TopicName)
 
-	json.NewEncoder(res).Encode(&responsePayload)
+	err = json.NewEncoder(res).Encode(responsePayload)
+	check(err)
 }
 
 // Length : returns the length of a queue
@@ -165,14 +173,16 @@ func (s *server) Length(res http.ResponseWriter, req *http.Request) {
 		responsePayload.Status = "Success"
 		responsePayload.Length = len(userTopic.Queue)
 
-		json.NewEncoder(res).Encode(responsePayload)
+		err := json.NewEncoder(res).Encode(responsePayload)
+		check(err)
 		return
 	}
 
 	responsePayload.Status = "Fail"
 	responsePayload.Err = "Topic doesnt exists."
 
-	json.NewEncoder(res).Encode(responsePayload)
+	err = json.NewEncoder(res).Encode(responsePayload)
+	check(err)
 }
 
 func handlers(s *server, router *mux.Router) {
@@ -183,7 +193,6 @@ func handlers(s *server, router *mux.Router) {
 }
 
 func main() {
-
 	srv := newServer()
 	router := mux.NewRouter()
 	handlers(srv, router)
