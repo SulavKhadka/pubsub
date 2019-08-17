@@ -7,9 +7,13 @@ import (
 	"net/http/httptest"
 	"reflect"
 	"testing"
+
+	"github.com/sulavkhadka/queue"
 )
 
 func TestCreateTopic(t *testing.T) {
+
+	srv := newServer()
 
 	samplePayload := []byte(`{"topic_name": "Test","queue": ""}`)
 
@@ -21,7 +25,7 @@ func TestCreateTopic(t *testing.T) {
 
 	req.Header.Set("Content-Type", "application/json")
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(CreateTopic)
+	handler := http.HandlerFunc(srv.CreateTopic)
 
 	//Making the API call
 	handler.ServeHTTP(rr, req)
@@ -58,6 +62,8 @@ func TestCreateTopic(t *testing.T) {
 
 func TestSendMessage(t *testing.T) {
 
+	srv := newServer()
+
 	// FIXME: Rethink the way to make the create topic call.
 	newTopic := []byte(`{"topic_name": "TestTopic","queue": ""}`)
 
@@ -69,7 +75,7 @@ func TestSendMessage(t *testing.T) {
 
 	req.Header.Set("Content-Type", "application/json")
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(CreateTopic)
+	handler := http.HandlerFunc(srv.CreateTopic)
 
 	//Making the API call
 	handler.ServeHTTP(rr, req)
@@ -77,7 +83,7 @@ func TestSendMessage(t *testing.T) {
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 
 	//Sample payload setup by converting struct to a byte array
-	samplePayload, err := json.Marshal(Message{"message my dude", 0, "TestTopic"})
+	samplePayload, err := json.Marshal(message{"message my dude", 0, "TestTopic"})
 	check(err)
 
 	//API endpoint setup
@@ -88,7 +94,7 @@ func TestSendMessage(t *testing.T) {
 
 	req.Header.Set("Content-Type", "application/json")
 	rr = httptest.NewRecorder()
-	handler = http.HandlerFunc(SendMessage)
+	handler = http.HandlerFunc(srv.SendMessage)
 
 	//Making the API call
 	handler.ServeHTTP(rr, req)
@@ -124,6 +130,9 @@ func TestSendMessage(t *testing.T) {
 }
 
 func TestGetMessage(t *testing.T) {
+
+	srv := newServer()
+
 	// FIXME: Rethink the way to make the create topic call.
 	newTopic := []byte(`{"topic_name": "TestTopic","queue": ""}`)
 
@@ -135,7 +144,7 @@ func TestGetMessage(t *testing.T) {
 
 	req.Header.Set("Content-Type", "application/json")
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(CreateTopic)
+	handler := http.HandlerFunc(srv.CreateTopic)
 
 	//Making the API call
 	handler.ServeHTTP(rr, req)
@@ -143,7 +152,7 @@ func TestGetMessage(t *testing.T) {
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 
 	//Sample payload setup by converting struct to a byte array
-	sampleMessage, err := json.Marshal(Message{"message my dude", 0, "TestTopic"})
+	sampleMessage, err := json.Marshal(message{"message my dude", 0, "TestTopic"})
 	check(err)
 
 	//API endpoint setup
@@ -154,7 +163,7 @@ func TestGetMessage(t *testing.T) {
 
 	req.Header.Set("Content-Type", "application/json")
 	rr = httptest.NewRecorder()
-	handler = http.HandlerFunc(SendMessage)
+	handler = http.HandlerFunc(srv.SendMessage)
 
 	//Making the API call
 	handler.ServeHTTP(rr, req)
@@ -175,7 +184,7 @@ func TestGetMessage(t *testing.T) {
 
 	req.Header.Set("Content-Type", "application/json")
 	rr = httptest.NewRecorder()
-	handler = http.HandlerFunc(GetMessage)
+	handler = http.HandlerFunc(srv.GetMessage)
 
 	//Making the API call
 	handler.ServeHTTP(rr, req)
@@ -189,15 +198,15 @@ func TestGetMessage(t *testing.T) {
 	}
 
 	expectedResponse := struct {
-		Topic string `json:"topic"`
-		Msg   Item   `json:"msg"`
-		Err   string `json:"err"`
-	}{"TestTopic", Item{1, "message my dude", "", "TestTopic"}, ""}
+		Topic string     `json:"topic"`
+		Msg   queue.Item `json:"msg"`
+		Err   string     `json:"err"`
+	}{"TestTopic", queue.Item{1, "message my dude", "", "TestTopic"}, ""}
 
 	actualResponse := struct {
-		Topic string `json:"topic"`
-		Msg   Item   `json:"msg"`
-		Err   string `json:"err"`
+		Topic string     `json:"topic"`
+		Msg   queue.Item `json:"msg"`
+		Err   string     `json:"err"`
 	}{}
 	actualPayload := json.NewDecoder(rr.Body)
 	err = actualPayload.Decode(&actualResponse)
