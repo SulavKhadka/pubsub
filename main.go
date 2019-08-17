@@ -11,17 +11,22 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type server struct {
-	topic  *queue.Topic
-	item   *queue.Item
-	queues map[string]*queue.Topic // Queues holds all the queues for a given instance
-}
-
 // Message :Struct for storing JSON message payloads
-type Message struct {
+type message struct {
 	Msg   string `json:"msg"`
 	ID    int    `json:"id"`
 	Topic string `json:"topic"`
+}
+
+type server struct {
+	topic  *queue.Topic            // topic is a queue object used to construct new queues.
+	queues map[string]*queue.Topic // queues holds all the queues for a given instance.
+}
+
+func newServer() *server {
+	return &server{
+		queues: make(map[string]*queue.Topic),
+	}
 }
 
 func check(e error) {
@@ -41,7 +46,7 @@ func (s *server) SendMessage(res http.ResponseWriter, req *http.Request) {
 		Err    string `json:"err"`
 	}{}
 
-	message := Message{}
+	message := message{}
 	messagePayload := json.NewDecoder(req.Body)
 	err := messagePayload.Decode(&message)
 	check(err)
@@ -170,21 +175,17 @@ func (s *server) Length(res http.ResponseWriter, req *http.Request) {
 	json.NewEncoder(res).Encode(responsePayload)
 }
 
-func loaderIoToken(res http.ResponseWriter, req *http.Request) {
-	res.Write([]byte("loaderio-3000acba7e633b71b1d2d9439c376dd8"))
-}
-
-func (s *server) main() {
-
-	s.queues = make(map[string]*queue.Topic)
-	s.item = &queue.Item{}
-
-	router := mux.NewRouter()
+func handlers(s *server, router *mux.Router) {
 	router.HandleFunc("/topic", s.CreateTopic).Methods("PUT")
 	router.HandleFunc("/topic", s.SendMessage).Methods("POST")
 	router.HandleFunc("/topic", s.GetMessage).Methods("GET")
 	router.HandleFunc("/length", s.Length).Methods("GET")
-	router.HandleFunc("/loaderio-3000acba7e633b71b1d2d9439c376dd8/", loaderIoToken)
-	//router.HandleFunc("/jobs", PrintMessage).Methods("GET")
+}
+
+func main() {
+
+	srv := newServer()
+	router := mux.NewRouter()
+	handlers(srv, router)
 	log.Fatal(http.ListenAndServe(":8000", router))
 }

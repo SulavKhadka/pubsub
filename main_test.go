@@ -13,10 +13,7 @@ import (
 
 func TestCreateTopic(t *testing.T) {
 
-	srv := server{
-		queues: make(map[string]*queue.Topic),
-		item:   &queue.Item{},
-	}
+	srv := newServer()
 
 	samplePayload := []byte(`{"topic_name": "Test","queue": ""}`)
 
@@ -65,10 +62,7 @@ func TestCreateTopic(t *testing.T) {
 
 func TestSendMessage(t *testing.T) {
 
-	srv := server{
-		queues: make(map[string]*queue.Topic),
-		item:   &queue.Item{},
-	}
+	srv := newServer()
 
 	// FIXME: Rethink the way to make the create topic call.
 	newTopic := []byte(`{"topic_name": "TestTopic","queue": ""}`)
@@ -89,7 +83,7 @@ func TestSendMessage(t *testing.T) {
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 
 	//Sample payload setup by converting struct to a byte array
-	samplePayload, err := json.Marshal(Message{"message my dude", 0, "TestTopic"})
+	samplePayload, err := json.Marshal(message{"message my dude", 0, "TestTopic"})
 	check(err)
 
 	//API endpoint setup
@@ -137,10 +131,7 @@ func TestSendMessage(t *testing.T) {
 
 func TestGetMessage(t *testing.T) {
 
-	srv := server{
-		queues: make(map[string]*queue.Topic),
-		item:   &queue.Item{},
-	}
+	srv := newServer()
 
 	// FIXME: Rethink the way to make the create topic call.
 	newTopic := []byte(`{"topic_name": "TestTopic","queue": ""}`)
@@ -161,7 +152,7 @@ func TestGetMessage(t *testing.T) {
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ //
 
 	//Sample payload setup by converting struct to a byte array
-	sampleMessage, err := json.Marshal(Message{"message my dude", 0, "TestTopic"})
+	sampleMessage, err := json.Marshal(message{"message my dude", 0, "TestTopic"})
 	check(err)
 
 	//API endpoint setup
