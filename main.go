@@ -2,10 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
 
+	"github.com/pkg/errors"
 	"github.com/sulavkhadka/queue"
 
 	"github.com/gorilla/mux"
@@ -19,8 +21,10 @@ type message struct {
 }
 
 type server struct {
-	topic  *queue.Topic            // topic is a queue object used to construct new queues.
-	queues map[string]*queue.Topic // queues holds all the queues for a given instance.
+	topic              *queue.Topic            // topic is a queue object used to construct new queues.
+	queues             map[string]*queue.Topic // queues holds all the queues for a given instance.
+	topicLimit         int
+	queueInitialLength int
 }
 
 // newServer initializes the server struct and returns a *server
@@ -50,7 +54,9 @@ func (s *server) SendMessage(res http.ResponseWriter, req *http.Request) {
 	message := message{}
 	messagePayload := json.NewDecoder(req.Body)
 	err := messagePayload.Decode(&message)
-	check(err)
+	if err != nil {
+		errors.Wrap(err, "SendMessage => failed to decode request payload:")
+	}
 
 	if topic, exists := s.queues[message.Topic]; exists {
 		topic.Insert(message.Msg)
@@ -58,7 +64,9 @@ func (s *server) SendMessage(res http.ResponseWriter, req *http.Request) {
 		responsePayload.Msg = fmt.Sprintf("Recieved Msg %s // ID: %d // Topic: %s", message.Msg, message.ID, message.Topic)
 
 		err := json.NewEncoder(res).Encode(responsePayload)
-		check(err)
+		if err != nil {
+			errors.Wrap(err, "SendMessage => failed to encode successful response payload:")
+		}
 		return
 	}
 
@@ -66,7 +74,9 @@ func (s *server) SendMessage(res http.ResponseWriter, req *http.Request) {
 	responsePayload.Err = "Topic doesnt exist"
 
 	err = json.NewEncoder(res).Encode(responsePayload)
-	check(err)
+	if err != nil {
+		errors.Wrap(err, "SendMessage => failed to encode 'topic doesnt exist' response payload:")
+	}
 }
 
 //GetMessage : retrieves the top message from the appropriate queue
@@ -86,7 +96,9 @@ func (s *server) GetMessage(res http.ResponseWriter, req *http.Request) {
 	topic := requestPayload
 	topicPayload := json.NewDecoder(req.Body)
 	err := topicPayload.Decode(&topic)
-	check(err)
+	if err != nil {
+		errors.Wrap(err, "GetMessage => failed to decode request payload:")
+	}
 
 	if topicName, exists := s.queues[topic.TopicName]; exists {
 		item := topicName.Get()
@@ -94,14 +106,18 @@ func (s *server) GetMessage(res http.ResponseWriter, req *http.Request) {
 		responsePayload.Msg = item
 
 		err := json.NewEncoder(res).Encode(responsePayload)
-		check(err)
+		if err != nil {
+			errors.Wrap(err, "GetMessage => failed to encode successful response payload:")
+		}
 		return
 	}
 
 	responsePayload.Err = "Topic doesnt exist"
 
 	err = json.NewEncoder(res).Encode(responsePayload)
-	check(err)
+	if err != nil {
+		errors.Wrap(err, "GetMessage => failed to encode 'topic doesnt exist' response payload:")
+	}
 
 }
 
@@ -121,14 +137,18 @@ func (s *server) CreateTopic(res http.ResponseWriter, req *http.Request) {
 	topic := requestPayload
 	topicPayload := json.NewDecoder(req.Body)
 	err := topicPayload.Decode(&topic)
-	check(err)
+	if err != nil {
+		errors.Wrap(err, "CreateTopic => failed to decode request payload:")
+	}
 
 	if len(s.queues) >= 25 {
 		responsePayload.Status = "Fail"
 		responsePayload.Err = "Max amount of topics reached."
 
 		err := json.NewEncoder(res).Encode(responsePayload)
-		check(err)
+		if err != nil {
+			errors.Wrap(err, "CreateTopic => failed to encode 'max topics reached' response payload:")
+		}
 		return
 	}
 
@@ -137,18 +157,22 @@ func (s *server) CreateTopic(res http.ResponseWriter, req *http.Request) {
 		responsePayload.Err = "Topic already exists."
 
 		err := json.NewEncoder(res).Encode(responsePayload)
-		check(err)
+		if err != nil {
+			errors.Wrap(err, "CreateTopic => failed to encode 'topic already exists' response payload:")
+		}
 		return
 	}
 
-	newTopicQueue := s.topic.New(topic.TopicName)
+	newTopicQueue := s.topic.New(topic.TopicName, s.queueInitialLength)
 	s.queues[topic.TopicName] = &newTopicQueue
 
 	responsePayload.Status = "Success"
 	responsePayload.Msg = fmt.Sprintf("Topic %s Added.", topic.TopicName)
 
 	err = json.NewEncoder(res).Encode(responsePayload)
-	check(err)
+	if err != nil {
+		errors.Wrap(err, "CreateTopic => failed to encode successful response payload:")
+	}
 }
 
 // Length : returns the length of a queue
@@ -167,14 +191,18 @@ func (s *server) Length(res http.ResponseWriter, req *http.Request) {
 	topic := requestPayload
 	topicPayload := json.NewDecoder(req.Body)
 	err := topicPayload.Decode(&topic)
-	check(err)
+	if err != nil {
+		errors.Wrap(err, "Length => failed to decode request payload:")
+	}
 
 	if userTopic, exists := s.queues[topic.TopicName]; exists {
 		responsePayload.Status = "Success"
 		responsePayload.Length = len(userTopic.Queue)
 
 		err := json.NewEncoder(res).Encode(responsePayload)
-		check(err)
+		if err != nil {
+			errors.Wrap(err, "Length => failed to encode successful response payload:")
+		}
 		return
 	}
 
@@ -182,7 +210,9 @@ func (s *server) Length(res http.ResponseWriter, req *http.Request) {
 	responsePayload.Err = "Topic doesnt exists."
 
 	err = json.NewEncoder(res).Encode(responsePayload)
-	check(err)
+	if err != nil {
+		errors.Wrap(err, "CreateTopic => failed to encode 'topic doesnt exists' response payload:")
+	}
 }
 
 func handlers(s *server, router *mux.Router) {
@@ -193,7 +223,14 @@ func handlers(s *server, router *mux.Router) {
 }
 
 func main() {
+
+	numOfTopicsFlag := flag.Int("numoftopics", 0, "The max number of topics allowed in the server. (Defaults to unlimited)")
+	queueInitialLengthFlag := flag.Int("initial-queue-length", 512, "The initial size of a new queue. If you know the avg payload volume this makes the queue faster by pre-allocatiing queue length. (Defaults to 512)")
+
 	srv := newServer()
+	srv.topicLimit = *numOfTopicsFlag
+	srv.queueInitialLength = *queueInitialLengthFlag
+
 	router := mux.NewRouter()
 	handlers(srv, router)
 	log.Fatal(http.ListenAndServe(":8000", router))
